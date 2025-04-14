@@ -114,6 +114,7 @@ func (s *Server) updateProxyQueryForwarding(c *gin.Context) {
 	}
 
 	// Update query forwarding flag in storage
+	//log.Printf("[debug] updateProxyQueryForwarding: proxyID: %s, req.QueryForwardingFlg: %v", proxyID, req.QueryForwardingFlg)
 	if err := s.storage.UpdateProxyQueryForwarding(c.Request.Context(), proxyID, req.QueryForwardingFlg, userID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

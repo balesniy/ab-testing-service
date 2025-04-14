@@ -669,6 +669,8 @@ func (s *Storage) UpdateProxyQueryForwarding(ctx context.Context, proxyID string
 	}
 
 	// Invalidate cache
+	//log.Printf("[debug] UpdateProxyQueryForwarding: proxyID: %s", proxyID)
+
 	return s.InvalidateProxyCache(ctx, proxyID)
 }
 

@@ -49,42 +49,28 @@ func (s *Storage) SaveVisit(ctx context.Context, visit *models.Visit) error {
 
 func (s *Storage) GetProxies(ctx context.Context) ([]proxy.Config, error) {
 	var proxies []proxy.Config
-	rows, err := s.db.Query(ctx,
-		`SELECT id, name, mode, condition, tags, saving_cookies_flg, query_forwarding_flg
-		FROM proxies ORDER BY created_at DESC`,
-	)
+
+	// Replace raw SQL query with the SQLC generated method
+	rows, err := s.q.GetProxies(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query proxies: %w", err)
 	}
-	defer rows.Close()
 
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("failed to iterate proxies: %w", err)
-	}
+	for _, p := range rows {
+		var proxyModel models.Proxy
+		proxyModel.ID = p.ID
+		proxyModel.Name = *p.Name
+		proxyModel.Mode = models.ProxyMode(p.Mode)
+		proxyModel.Tags = p.Tags
+		proxyModel.SavingCookiesFlg = p.SavingCookiesFlg
+		proxyModel.QueryForwardingFlg = p.QueryForwardingFlg
+		proxyModel.CookiesForwardingFlg = p.CookiesForwardingFlg
 
-	for rows.Next() {
-		// failed to scan proxy: can't scan into dest[1]: cannot scan NULL into *string
-		var p models.Proxy
-		var conditionJSON []byte
-		var name string
-		if err := rows.Scan(&p.ID, &name, &p.Mode, &conditionJSON, &p.Tags, &p.SavingCookiesFlg, &p.QueryForwardingFlg); err != nil {
-			return nil, fmt.Errorf("failed to scan proxy: %w", err)
-		}
-		if len(conditionJSON) > 0 {
-			p.Condition = &models.RouteCondition{}
-			if err := json.Unmarshal(conditionJSON, p.Condition); err != nil {
+		if len(p.Condition) > 0 {
+			proxyModel.Condition = &models.RouteCondition{}
+			if err := json.Unmarshal(p.Condition, proxyModel.Condition); err != nil {
 				return nil, fmt.Errorf("failed to unmarshal condition: %w", err)
 			}
-		}
-
-		config := proxy.Config{
-			ID:                   p.ID,
-			Name:                 name,
-			Mode:                 p.Mode,
-			Tags:                 p.Tags,
-			SavingCookiesFlg:     p.SavingCookiesFlg,
-			QueryForwardingFlg:   p.QueryForwardingFlg,
-			CookiesForwardingFlg: p.CookiesForwardingFlg,
 		}
 
 		// Fetch ListenURLs from proxy_listen_urls table
@@ -93,42 +79,44 @@ func (s *Storage) GetProxies(ctx context.Context) ([]proxy.Config, error) {
 			return nil, fmt.Errorf("failed to get listen URLs for proxy %s: %w", p.ID, err)
 		}
 
-		// Map ListenURLs to the models.Proxy and proxy.Config structures
+		// Map ListenURLs to the models.Proxy structure
 		for _, listenURL := range listenURLs {
-			// Add to models.Proxy
-			modelListenURL := models.ListenURL{
+			proxyModel.ListenURLs = append(proxyModel.ListenURLs, models.ListenURL{
 				ID:        listenURL.ID,
 				ProxyID:   listenURL.ProxyID,
 				ListenURL: listenURL.ListenUrl,
 				PathKey:   listenURL.PathKey,
-			}
-			p.ListenURLs = append(p.ListenURLs, modelListenURL)
-
-			// Add to proxy.Config
-			configListenURL := proxy.ListenURL{
-				ID:        listenURL.ID,
-				ListenURL: listenURL.ListenUrl,
-				PathKey:   listenURL.PathKey,
-			}
-			config.ListenURLs = append(config.ListenURLs, configListenURL)
+				CreatedAt: listenURL.CreatedAt.Time,
+				UpdatedAt: listenURL.UpdatedAt.Time,
+			})
 		}
 
-		condition, err := convertCondition(p.Condition)
+		// Fetch targets
+		//targets, err := s.q.GetTargetsByProxyID(ctx, p.ID)
+		targets, err := s.GetTargets(ctx, p.ID)
 		if err != nil {
-			// Error handling
-			log.Printf("Failed to convert condition for proxy %s: %v", p.ID, err)
-			// Possible options:
-			// 1. Skip this proxy
-			//continue
-			// 2. Return error
-			//return nil, fmt.Errorf("failed to process proxy %s: %w", p.ID, err)
-			// 3. Return nil and continue processing other proxies
-			//config.Condition = nil
+			return nil, fmt.Errorf("failed to get targets for proxy %s: %w", p.ID, err)
 		}
 
-		if condition != nil {
-			config.Condition = condition
+		// Map targets to the models.Proxy structure
+		for _, target := range targets {
+			proxyModel.Targets = append(proxyModel.Targets, models.Target{
+				ID:       target.ID,
+				ProxyID:  p.ID,
+				URL:      target.URL,
+				Weight:   target.Weight,
+				IsActive: target.IsActive,
+			})
 		}
+
+		// Use the helper function to create proxy config
+		config, err := s.createProxyConfigFromModel(&proxyModel)
+		if err != nil {
+			log.Printf("Failed to convert proxy model to config for proxy %s: %v", p.ID, err)
+			// Skip this proxy and continue with others
+			continue
+		}
+
 		proxies = append(proxies, config)
 	}
 	return proxies, nil

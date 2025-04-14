@@ -56,26 +56,26 @@ func (s *Supervisor) Start(ctx context.Context) {
 		log.Printf("Failed to start Redis subscriber: %v", err)
 	}
 
-	// Load existing proxies configs from cached Postgres
+	// Load proxies configs from Postgres
 	configs, err := s.storage.GetProxies(ctx)
 	if err != nil {
 		log.Printf("Failed to load proxy configs: %v", err)
 	}
 
 	for _, cfg := range configs {
-		targets, err := s.storage.GetTargets(ctx, cfg.ID)
-		if err != nil {
-			log.Printf("Failed to load targets for proxy %s: %v", cfg.ID, err)
-			continue
-		}
-		for _, t := range targets {
-			cfg.Targets = append(cfg.Targets, proxy.Target{
-				ID:       t.ID,
-				URL:      t.URL,
-				Weight:   t.Weight,
-				IsActive: t.IsActive,
-			})
-		}
+		//targets, err := s.storage.GetTargets(ctx, cfg.ID)
+		//if err != nil {
+		//	log.Printf("Failed to load targets for proxy %s: %v", cfg.ID, err)
+		//	continue
+		//}
+		//for _, t := range targets {
+		//	cfg.Targets = append(cfg.Targets, proxy.Target{
+		//		ID:       t.ID,
+		//		URL:      t.URL,
+		//		Weight:   t.Weight,
+		//		IsActive: t.IsActive,
+		//	})
+		//}
 		// Save existing proxy configurations to Redis cache
 		if err := s.storage.SaveProxyConfig(ctx, cfg); err != nil {
 			log.Printf("Failed to save proxy config %s: %v", cfg.ID, err)

@@ -49,6 +49,7 @@ func (s *Server) setupRouter() {
 		api.PUT("/proxies/:id/cookies", s.updateProxySavingCookies)
 		api.PUT("/proxies/:id/query-forwarding", s.updateProxyQueryForwarding)
 		api.PUT("/proxies/:id/cookies-forwarding", s.updateProxyCookiesForwarding)
+		api.PUT("/proxies/:id/condition", s.updateProxyCondition)
 
 		// Tag management
 		api.GET("/tags", s.getAllTags)

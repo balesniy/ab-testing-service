@@ -13,6 +13,7 @@ require (
 	github.com/segmentio/kafka-go v0.4.47
 	golang.org/x/crypto v0.31.0
 	gopkg.in/yaml.v3 v3.0.1
+	github.com/expr-lang/expr v1.16.9
 )
 
 require (
@@ -21,7 +22,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
-	github.com/expr-lang/expr v1.16.9 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect

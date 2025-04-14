@@ -98,6 +98,18 @@ func NewProxy(cfg Config) (*Proxy, error) {
 	return proxy, nil
 }
 
+func (p *Proxy) UpdateConfig(cfg Config) {
+	p.Config = cfg
+	p.Name = cfg.Name
+	p.ListenURLs = cfg.ListenURLs
+	p.Mode = cfg.Mode
+	p.Targets = cfg.Targets
+	p.SavingCookiesFlg = cfg.SavingCookiesFlg
+	p.QueryForwardingFlg = cfg.QueryForwardingFlg
+	p.CookiesForwardingFlg = cfg.CookiesForwardingFlg
+	//log.Printf("[debug] proxy config updated: %s", cfg)
+}
+
 func validate(cfg Config) (float64, error) {
 	if cfg.ID == "" {
 		return 0, fmt.Errorf("proxy ID is required")

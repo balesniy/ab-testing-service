@@ -19,6 +19,7 @@ func (s *Supervisor) ListProxies(ctx context.Context, sortBy string, sortDesc bo
 	defer s.mutex.RUnlock()
 
 	var configs []proxy.Config
+
 	for id, p := range s.proxies {
 		tags, err := s.storage.GetTags(ctx, id)
 		if err != nil {
@@ -26,13 +27,16 @@ func (s *Supervisor) ListProxies(ctx context.Context, sortBy string, sortDesc bo
 			continue
 		}
 		configs = append(configs, proxy.Config{
-			ID:         id,
-			Name:       p.Proxy.Name,
-			ListenURLs: p.Proxy.ListenURLs,
-			Mode:       p.Proxy.Mode,
-			Targets:    p.Proxy.Targets,
-			Condition:  p.Proxy.Config.Condition,
-			Tags:       tags,
+			ID:                   id,
+			Name:                 p.Proxy.Name,
+			ListenURLs:           p.Proxy.ListenURLs,
+			Mode:                 p.Proxy.Mode,
+			Targets:              p.Proxy.Targets,
+			Condition:            p.Proxy.Config.Condition,
+			Tags:                 tags,
+			SavingCookiesFlg:     p.Proxy.SavingCookiesFlg,
+			QueryForwardingFlg:   p.Proxy.QueryForwardingFlg,
+			CookiesForwardingFlg: p.Proxy.CookiesForwardingFlg,
 		})
 	}
 

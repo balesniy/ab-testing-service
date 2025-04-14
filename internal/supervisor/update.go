@@ -69,10 +69,20 @@ func (s *Supervisor) UpdateProxy(ctx context.Context, cfg proxy.Config) error {
 		newHosts[host] = true
 	}
 
-	// Create new proxy with updated config
-	newProxy, err := proxy.NewProxy(cfg)
-	if err != nil {
-		return fmt.Errorf("failed to create new proxy: %w", err)
+	// Вместо создания нового прокси, обновляем конфигурацию существующего
+	//log.Printf("[debug] supervisor.UpdateProxy: proxyID: %s", cfg.ID)
+	var newProxy *proxy.Proxy
+	if instance.Proxy != nil {
+		// Используем существующий прокси и обновляем его конфигурацию
+		newProxy = instance.Proxy
+		newProxy.UpdateConfig(cfg)
+	} else {
+		// Создаем новый прокси только если его не было
+		var err error
+		newProxy, err = proxy.NewProxy(cfg)
+		if err != nil {
+			return fmt.Errorf("failed to create new proxy: %w", err)
+		}
 	}
 
 	// Update virtual host handler
